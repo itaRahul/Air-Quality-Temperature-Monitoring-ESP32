@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Air Quality & Temperature Monitor</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+font-family:Segoe UI,sans-serif;
+background:linear-gradient(135deg,#1a1a2e,#16213e);
+color:white;
+padding:20px;
+}
+.container{max-width:1200px;margin:auto;}
+h1{text-align:center;margin-bottom:25px;}
+.dashboard{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:20px;
+}
+.card{
+background:rgba(255,255,255,.1);
+padding:20px;
+border-radius:15px;
+text-align:center;
+}
+.co{border-left:5px solid #ff6b6b;}
+.aqi{border-left:5px solid #4ecdc4;}
+.temp{border-left:5px solid #ffe66d;}
+.buzzer{border-left:5px solid #ff4757;}
+.card-title{font-size:16px;margin-bottom:10px;}
+.card-value{font-size:40px;font-weight:bold;}
+.card-unit{margin-top:10px;}
+.emergency-banner{
+display:none;
+background:#ff4757;
+padding:20px;
+border-radius:12px;
+text-align:center;
+margin-bottom:20px;
+}
+.emergency-banner.active{display:block;}
+button{
+margin-top:10px;
+padding:10px 20px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+}
+.status{
+margin-top:20px;
+text-align:center;
+padding:10px;
+border-radius:8px;
+}
+.connected{background:#2ed57333;}
+.disconnected{background:#ff475733;}
+#systemCard{
+margin-top:20px;
+border-left:5px solid #2ed573;
+}
+
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>🌡️ Air Quality & Temperature Monitor</h1>
+
+<div class="emergency-banner" id="emergencyBanner">
+<h2>🚨 Emergency Alert</h2>
+<p>Unsafe air quality or temperature detected.</p>
+<button onclick="acknowledgeEmergency()">Acknowledge</button>
+</div>
+
+<div class="dashboard">
+
+<div class="card co">
+<div class="card-title">Carbon Monoxide</div>
+<div class="card-value" id="coLevel">--</div>
+<div class="card-unit">ppm</div>
+</div>
+
+<div class="card aqi">
+<div class="card-title">Air Quality Index</div>
+<div class="card-value" id="airQuality">--</div>
+<div class="card-unit">AQI</div>
+</div>
+
+<div class="card temp">
+<div class="card-title">Temperature</div>
+<div class="card-value" id="temperature">--</div>
+<div class="card-unit">°C</div>
+</div>
+
+<div class="card buzzer">
+<div class="card-title">Buzzer</div>
+<div class="card-value" id="buzzerStatus">OFF</div>
+<div class="card-unit">Alarm</div>
+</div>
+
+</div>
+
+<div id="connectionStatus" class="status">Connecting...</div>
+<div class="card" id="systemCard">
+    <div class="card-title">System Status</div>
+    <div class="card-value" id="systemStatus">🟢 NORMAL</div>
+    <div class="card-unit">Monitoring</div>
+</div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+
+const firebaseConfig={
+apiKey: "AIzaSyBqRD5O-Qk6XgZIDJrduQFQy_JDG4xkYs0",
+  authDomain: "airqualityandtemperature.firebaseapp.com",
+  databaseURL: "https://airqualityandtemperature-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "airqualityandtemperature",
+  storageBucket: "airqualityandtemperature.firebasestorage.app",
+  messagingSenderId: "835499833155",
+  appId: "1:835499833155:web:d2d733a525cab70be061f6"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db=firebase.database();
+const ref=db.ref("SensorData");
+
+ref.on("value",(snapshot)=>{
+const data=snapshot.val();
+if(!data)return;
+
+coLevel.textContent=(data.coLevel??0).toFixed(1);
+airQuality.textContent=(data.airQuality??0).toFixed(1);
+temperature.textContent=(data.temperature??0).toFixed(1);
+buzzerStatus.textContent=data.buzzer?"ON":"OFF";
+
+if(data.emergency && !data.acknowledged){
+ emergencyBanner.classList.add("active");
+}else{
+ emergencyBanner.classList.remove("active");
+}
+if(data.emergency){
+    document.getElementById("systemStatus").innerHTML="🔴 EMERGENCY";
+    document.getElementById("systemCard").style.borderLeft="5px solid #ff4757";
+}
+else{
+    document.getElementById("systemStatus").innerHTML="🟢 NORMAL";
+    document.getElementById("systemCard").style.borderLeft="5px solid #2ed573";
+}
+
+
+connectionStatus.textContent="Connected";
+connectionStatus.className="status connected";
+},()=>{
+connectionStatus.textContent="Disconnected";
+connectionStatus.className="status disconnected";
+});
+
+function acknowledgeEmergency(){
+ref.update({acknowledged:true});
+}
+
+</script>
+
+</body>
+</html>
